@@ -47,6 +47,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'API' : {
                 'Description'   :   'Switch. Use an api call (DsEnumerateDomainTrusts) to enumerate the trusts instead of the built-in LDAP method',
                 'Required'      :   False,
@@ -137,7 +142,7 @@ class Module(object):
         script += "\n" + moduleName + " "
 
         for option,values in self.options.items():
-            if option.lower() != "agent":
+            if option.lower() != "agent" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
@@ -145,7 +150,8 @@ class Module(object):
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
 
-        script += '| ConvertTo-Csv -NoTypeInformation | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        outputf = self.options["OutputFunction"]["Value"]
+        script += "| ConvertTo-Csv -NoTypeInformation | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
