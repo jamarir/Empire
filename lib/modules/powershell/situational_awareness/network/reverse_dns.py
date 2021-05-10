@@ -47,6 +47,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Range' : {
                 'Description'   :   "Range to perform reverse DNS on.",
                 'Required'      :   False,
@@ -72,6 +77,7 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
+        moduleName = self.info["Name"]
         # read in the common module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-ReverseDNSLookup.ps1"
         if obfuscate:
@@ -91,7 +97,7 @@ class Module(object):
         scriptEnd = "Invoke-ReverseDNSLookup"
 
         for option,values in self.options.items():
-            if option.lower() != "agent":
+            if option.lower() != "agent" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
@@ -100,7 +106,9 @@ class Module(object):
                         scriptEnd += " -" + str(option) + " " + str(values['Value']) 
 
         # only return objects where HostName is not an IP (i.e. the address resolves)
-        scriptEnd += " | % {try{$entry=$_; $ipObj = [System.Net.IPAddress]::parse($entry.HostName); if(-not [System.Net.IPAddress]::tryparse([string]$_.HostName, [ref]$ipObj)) { $entry }} catch{$entry} } | Select-Object HostName, AddressList | ft -autosize | Out-String | %{$_ + \"`n\"}"
+        scriptEnd += " | % {try{$entry=$_; $ipObj = [System.Net.IPAddress]::parse($entry.HostName); if(-not [System.Net.IPAddress]::tryparse([string]$_.HostName, [ref]$ipObj)) { $entry }} catch{$entry} } | Select-Object HostName, AddressList | ft -autosize"
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
