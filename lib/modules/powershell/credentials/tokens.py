@@ -52,6 +52,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'RevToSelf' : {
                 'Description'   :   'Switch. Revert to original token.',
                 'Required'      :   False,
@@ -122,6 +127,8 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
         
+        moduleName = self.info["Name"]
+
         # read in the common module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/credentials/Invoke-TokenManipulation.ps1"
         if obfuscate:
@@ -140,28 +147,32 @@ class Module(object):
 
         scriptEnd = "Invoke-TokenManipulation"
 
+        outputf = self.options["OutputFunction"]["Value"]
+
         if self.options['RevToSelf']['Value'].lower() == "true":
             scriptEnd += " -RevToSelf"
         elif self.options['WhoAmI']['Value'].lower() == "true":
             scriptEnd += " -WhoAmI"
         elif self.options['ShowAll']['Value'].lower() == "true":
-            scriptEnd += " -ShowAll | Out-String"
+            scriptEnd += " -ShowAll"
+            scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         else:
 
             for option,values in self.options.items():
-                if option.lower() != "agent":
+                if option.lower() != "agent" and option.lower() != "outputfunction":
                     if values['Value'] and values['Value'] != '':
                         if values['Value'].lower() == "true":
                             # if we're just adding a switch
                             scriptEnd += " -" + str(option)
                         else:
-                            scriptEnd += " -" + str(option) + " " + str(values['Value']) 
+                            scriptEnd += " -" + str(option) + " " + str(values['Value'])
 
             # try to make the output look nice
             if script.endswith("Invoke-TokenManipulation") or script.endswith("-ShowAll"):
-                scriptEnd += "| Select-Object Domain, Username, ProcessId, IsElevated, TokenType | ft -autosize | Out-String"
+                scriptEnd += "| Select-Object Domain, Username, ProcessId, IsElevated, TokenType | ft -autosize"
+                scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
             else:
-                scriptEnd += "| Out-String"
+                scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
                 if self.options['RevToSelf']['Value'].lower() != "true":
                     scriptEnd += ';"`nUse credentials/tokens with RevToSelf option to revert token privileges"'
         if obfuscate:
