@@ -48,6 +48,11 @@ class Module(object):
                 'Description'   :   'Agent to run module on.',
                 'Required'      :   True,
                 'Value'         :   ''
+            },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
             }
         }
 
@@ -64,6 +69,8 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
         
+        moduleName = self.info["Name"]
+
         # read in the common module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/credentials/Get-VaultCredential.ps1"
         if obfuscate:
@@ -81,6 +88,10 @@ class Module(object):
         script = moduleCode
         
         scriptEnd = "Get-VaultCredential"
+
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
