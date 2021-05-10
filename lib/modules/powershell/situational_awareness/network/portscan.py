@@ -48,6 +48,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Hosts' : {
                 'Description'   :   "Hosts to scan.",
                 'Required'      :   False,
@@ -123,6 +128,7 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
+        moduleName = self.info["Name"]
         # read in the common module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-Portscan.ps1"
         if obfuscate:
@@ -142,7 +148,7 @@ class Module(object):
         scriptEnd = "Invoke-PortScan -noProgressMeter -f"
 
         for option,values in self.options.items():
-            if option.lower() != "agent":
+            if option.lower() != "agent" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
@@ -150,7 +156,9 @@ class Module(object):
                     else:
                         scriptEnd += " -" + str(option) + " " + str(values['Value']) 
 
-        scriptEnd += " | ? {$_.alive}| Select-Object HostName,@{name='OpenPorts';expression={$_.openPorts -join ','}} | ft -wrap | Out-String | %{$_ + \"`n\"}"
+        scriptEnd += " | ? {$_.alive}| Select-Object HostName,@{name='OpenPorts';expression={$_.openPorts -join ','}} | ft -wrap"
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         scriptEnd = helpers.keyword_obfuscation(scriptEnd)
 
         if obfuscate:
