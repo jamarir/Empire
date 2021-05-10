@@ -42,6 +42,11 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'GUID' : {
                 'Description'   :   'The GUID of the GPO to enumerate.',
                 'Required'      :   True,
@@ -90,7 +95,7 @@ class Module:
         script += "\nGet-DomainOU "
 
         for option, values in self.options.items():
-            if option.lower() != "agent" and option.lower() != "guid":
+            if option.lower() != "agent" and option.lower() != "guid" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
@@ -101,7 +106,7 @@ class Module:
         script += "-GPLink " + str(self.options['GUID']['Value']) + " | %{ Get-DomainComputer -SearchBase $_.distinguishedname"
 
         for option, values in self.options.items():
-            if option.lower() != "agent" and option.lower() != "guid":
+            if option.lower() != "agent" and option.lower() != "guid" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
@@ -109,7 +114,9 @@ class Module:
                     else:
                         script += " -" + str(option) + " " + str(values['Value'])
 
-        script += '} | Out-String | %{$_ + \"`n\"};"`n' + str(moduleName) + ' completed!"'
+        outputf = self.options["OutputFunction"]["Value"]
+        script += "}" + " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+
         if obfuscate:
             script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         script = helpers.keyword_obfuscation(script)
