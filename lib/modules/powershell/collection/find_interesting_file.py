@@ -44,6 +44,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Path' : {
                 'Description'   :   'UNC/local path to recursively search.',
                 'Required'      :   True,
@@ -124,7 +129,7 @@ class Module(object):
         script += moduleName + " "
 
         for option,values in self.options.items():
-            if option.lower() != "agent":
+            if option.lower() != "agent" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
@@ -132,7 +137,8 @@ class Module(object):
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
 
-        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        outputf = self.options["OutputFunction"]["Value"]
+        script += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         # Get the random function name generated at install and patch the stager with the proper function name
         if obfuscate:
