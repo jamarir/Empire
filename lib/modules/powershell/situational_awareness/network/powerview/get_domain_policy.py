@@ -47,6 +47,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Policy' : {
                 'Description'   :   'Extract Domain or DC (domain controller) policies, or All',
                 'Required'      :   True,
@@ -103,7 +108,7 @@ class Module(object):
         expand = False
         value_to_expand = ""
         for option,values in self.options.items():
-            if option.lower() != "agent" and option.lower() != "expandobject":
+            if option.lower() != "agent" and option.lower() != "expandobject" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
@@ -114,10 +119,12 @@ class Module(object):
                 expand = True
                 value_to_expand += values['Value']
 
+        outputf = self.options["OutputFunction"]["Value"]
+
         if expand: 
-            script += "(" + moduleName + " " + pscript + ")." + "'" + value_to_expand + "'" + ' | fl | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+            script += "(" + moduleName + " " + pscript + ")." + "'" + value_to_expand + "'" + ' | fl | {outputf} | '.format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         else:
-            script += "\n" + moduleName + " " + pscript + ' | fl | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed! Use ExpandObject option to expand one of the objects above such as \'System Access\'"'
+            script += "\n" + moduleName + " " + pscript + ' | fl | {outputf} | '.format(outputf=outputf) + ' + %{$_ + \"`n\"};"`n'+str(moduleName)+' completed! Use ExpandObject option to expand one of the objects above such as \'System Access\'"'
 
         if obfuscate:
             script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
