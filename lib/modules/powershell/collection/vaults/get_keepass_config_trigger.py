@@ -56,6 +56,11 @@ class Module(object):
                 'Description'   :   'Agent to run the module on.',
                 'Required'      :   True,
                 'Value'         :   ''
+            },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
             }
         }
 
@@ -98,7 +103,11 @@ class Module(object):
 
         scriptEnd = "\nFind-KeePassconfig | Get-KeePassConfigTrigger  "
 
-        scriptEnd += ' | Format-List | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        scriptEnd += ' | Format-List'
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+
+
 
         # Get the random function name generated at install and patch the stager with the proper function name
         if obfuscate:
