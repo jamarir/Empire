@@ -50,6 +50,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Technique' : {
                 'Description'   :   "Technique to use, 'NamedPipe' for service named pipe impersonation or 'Token' for adjust token privs.",
                 'Required'      :   False,
@@ -114,7 +119,7 @@ class Module(object):
             scriptEnd += " -WhoAmI"
         else:
             for option,values in self.options.items():
-                if option.lower() != "agent":
+                if option.lower() != "agent" and option.lower() != "outputfunction":
                     if values['Value'] and values['Value'] != '':
                         if values['Value'].lower() == "true":
                             # if we're just adding a switch
@@ -122,7 +127,8 @@ class Module(object):
                         else:
                             scriptEnd += " -" + str(option) + " " + str(values['Value']) 
 
-            scriptEnd += "| Out-String | %{$_ + \"`n\"};"
+            outputf = self.options["OutputFunction"]["Value"]
+            scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};'
             scriptEnd += "'Get-System completed'"
 
         if obfuscate:
