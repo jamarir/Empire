@@ -45,6 +45,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'ComputerName' : {
                 'Description'   :   'Computername to run the module on, defaults to localhost.',
                 'Required'      :   False,
@@ -65,6 +70,7 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
         
+        moduleName = self.info["Name"]
         script = """
 function Get-AntiVirusProduct { 
       [CmdletBinding()] 
@@ -99,7 +105,7 @@ function Get-AntiVirusProduct {
 Get-AntiVirusProduct """
 
         for option,values in self.options.items():
-            if option.lower() != "agent":
+            if option.lower() != "agent" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
@@ -107,7 +113,8 @@ Get-AntiVirusProduct """
                     else:
                         script += " -" + str(option) + " " + str(values['Value'])
 
-        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(self.info["Name"])+' completed!";'
+        outputf = self.options["OutputFunction"]["Value"]
+        script += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
