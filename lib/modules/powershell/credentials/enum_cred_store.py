@@ -31,6 +31,11 @@ class Module(object):
                 'Description'   :   'Agent to run module on.',
                 'Required'      :   True,
                 'Value'         :   ''
+            },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
             }
         }
 
@@ -46,8 +51,10 @@ class Module(object):
 
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
+        moduleName = self.info["Name"]
         moduleSource = self.mainMenu.installPath + "/data/module_source/credentials/dumpCredStore.ps1"
         scriptCmd = "Invoke-X"
+
         if obfuscate:
             helpers.obfuscate_module(moduleSource=moduleSource, obfuscationCommand=obfuscationCommand)
             moduleSource = moduleSource.replace("module_source", "obfuscated_module_source")
@@ -58,9 +65,12 @@ class Module(object):
             return ""
 
         script = f.read()
+        outputf = self.options["OutputFunction"]["Value"]
+        script += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         f.close()
 
         scriptEnd = "\n%s" %(scriptCmd)
+
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
