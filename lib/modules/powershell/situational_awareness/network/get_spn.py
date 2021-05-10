@@ -49,6 +49,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Type' : {
                 'Description'   :   "'group', 'user', or 'service'",
                 'Required'      :   False,
@@ -74,6 +79,7 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
         
+        moduleName = self.info["Name"]
         # read in the common module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Get-SPN.ps1"
         if obfuscate:
@@ -93,7 +99,7 @@ class Module(object):
         scriptEnd = "\nGet-SPN"
 
         for option,values in self.options.items():
-            if option.lower() != "agent":
+            if option.lower() != "agent" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
@@ -101,7 +107,9 @@ class Module(object):
                     else:
                         scriptEnd += " -" + str(option) + " " + str(values['Value']) 
         
-        scriptEnd += " -List yes | Format-Table -Wrap | Out-String | %{$_ + \"`n\"}"
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " -List yes | Format-Table -Wrap"
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
