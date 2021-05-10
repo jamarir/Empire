@@ -43,6 +43,11 @@ class Module:
                 'Required'   :   True,
                 'Value'      :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'CredID' : {
                 'Description'   :   'CredID from the store to use.',
                 'Required'      :   False,
@@ -125,7 +130,7 @@ class Module:
         scriptEnd += "Invoke-SMBLogin"
 
         for option, values in self.options.items():
-            if option.lower() != "agent" and option.lower() != "credid":
+            if option.lower() != "agent" and option.lower() != "credid" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         scriptEnd += " -" + str(option)
@@ -134,7 +139,8 @@ class Module:
         if obfuscate:
             scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
 
-        scriptEnd += "| Out-String | %{$_ + \"`n\"};"
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + "%{$_ + \"`n\"};"
         scriptEnd += "'Invoke-SMBLogin completed'"
         script += scriptEnd
         script = helpers.keyword_obfuscation(script)
