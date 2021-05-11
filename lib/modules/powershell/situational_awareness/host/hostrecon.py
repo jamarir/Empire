@@ -60,6 +60,11 @@ class Module(object):
                 'Description'   :   'Agent to enumerate trusted documents from.',
                 'Required'      :   True,
                 'Value'         :   ''
+            },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
             }
         }
 
@@ -69,6 +74,7 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
         
+        moduleName = self.info["Name"]
         # the PowerShell script itself, with the command to invoke
         #   for execution appended to the end. Scripts should output
         #   everything to the pipeline for proper parsing.
@@ -91,6 +97,9 @@ class Module(object):
 
         script = moduleCode
         scriptEnd = "Invoke-HostRecon"
+
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
