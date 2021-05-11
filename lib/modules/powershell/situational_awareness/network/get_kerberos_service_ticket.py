@@ -57,6 +57,11 @@ class Module(object):
                 'Required'   :   True,
                 'Value'      :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'UserName': {
                 'Description':   'UserName to find, must be in the format of username@domain.local',
                 'Required'   :   False,
@@ -92,6 +97,7 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
+        moduleName = self.info["Name"]
         username = self.options['UserName']['Value']
         maxevents = self.options['MaxEvents']['Value']
         excludecomputers = self.options['ExcludeComputers']['Value']
@@ -121,7 +127,9 @@ class Module(object):
         if excludecomputers == 'False':
             scriptEnd += " -ExcludeComputers $false"
 
-        scriptEnd += " | Format-Table -AutoSize | Out-String"
+        scriptEnd += " | Format-Table -AutoSize | Out-String"
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         # Get the random function name generated at install and patch the stager with the proper function name
         if obfuscate:
