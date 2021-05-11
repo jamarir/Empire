@@ -47,6 +47,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Limit' : {
                 'Description'   :   'Limit the number of event log entries returned. Defaults to 100',
                 'Required'      :   False,
@@ -92,6 +97,7 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
+        moduleName = self.info["Name"]
         # read in the common module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/host/Get-ComputerDetails.ps1"
         if obfuscate:
@@ -108,22 +114,25 @@ class Module(object):
 
         script = moduleCode + "\n\n"
         scriptEnd = ""
+        outputf = self.options["OutputFunction"]["Value"]
 
         for option,values in self.options.items():
-            if option.lower() != "agent":
+            if option.lower() != "agent" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if option == "4624":
                         scriptEnd += "$SecurityLog = Get-EventLog -LogName Security; $Filtered4624 = Find-4624Logons $SecurityLog;"
                         scriptEnd += 'Write-Output "Event ID 4624 (Logon):`n";'
-                        scriptEnd += "Write-Output $Filtered4624.Values | Out-String"
+                        scriptEnd += "Write-Output $Filtered4624.Values"
+                        scriptEnd += " | {outputf}".format(outputf=outputf)
                         scriptEnd = helpers.keyword_obfuscation(scriptEnd)
         for option, values in self.options.items():
-            if option.lower() != "agent":
+            if option.lower() != "agent" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if option == "4624":
                         scriptEnd += "$SecurityLog = Get-EventLog -LogName Security; $Filtered4624 = Find-4624Logons $SecurityLog;"
                         scriptEnd += 'Write-Output "Event ID 4624 (Logon):`n";'
-                        scriptEnd += "Write-Output $Filtered4624.Values | Out-String"
+                        scriptEnd += "Write-Output $Filtered4624.Values"
+                        scriptEnd += " | {outputf}".format(outputf=outputf)
                         if obfuscate:
                             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd,
                                                           obfuscationCommand=obfuscationCommand)
@@ -132,7 +141,8 @@ class Module(object):
                     if option == "4648":
                         scriptEnd += "$SecurityLog = Get-EventLog -LogName Security; $Filtered4648 = Find-4648Logons $SecurityLog;"
                         scriptEnd += 'Write-Output "Event ID 4648 (Explicit Credential Logon):`n";'
-                        scriptEnd += "Write-Output $Filtered4648.Values | Out-String"
+                        scriptEnd += "Write-Output $Filtered4648.Values"
+                        scriptEnd += " | {outputf}".format(outputf=outputf)
                         if obfuscate:
                             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd,
                                                           obfuscationCommand=obfuscationCommand)
@@ -141,7 +151,8 @@ class Module(object):
                     if option == "AppLocker":
                         scriptEnd += "$AppLockerLogs = Find-AppLockerLogs;"
                         scriptEnd += 'Write-Output "AppLocker Process Starts:`n";'
-                        scriptEnd += "Write-Output $AppLockerLogs.Values | Out-String"
+                        scriptEnd += "Write-Output $AppLockerLogs.Values"
+                        scriptEnd += " | {outputf}".format(outputf=outputf)
                         if obfuscate:
                             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd,
                                                           obfuscationCommand=obfuscationCommand)
@@ -150,7 +161,8 @@ class Module(object):
                     if option == "PSLogs":
                         scriptEnd += "$PSLogs = Find-PSScriptsInPSAppLog;"
                         scriptEnd += 'Write-Output "PowerShell Script Executions:`n";'
-                        scriptEnd += "Write-Output $PSLogs.Values | Out-String"
+                        scriptEnd += "Write-Output $PSLogs.Values"
+                        scriptEnd += " | {outputf}".format(outputf=outputf)
                         if obfuscate:
                             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd,
                                                           obfuscationCommand=obfuscationCommand)
@@ -159,7 +171,8 @@ class Module(object):
                     if option == "SavedRDP":
                         scriptEnd += "$RdpClientData = Find-RDPClientConnections;"
                         scriptEnd += 'Write-Output "RDP Client Data:`n";'
-                        scriptEnd += "Write-Output $RdpClientData.Values | Out-String"
+                        scriptEnd += "Write-Output $RdpClientData.Values"
+                        scriptEnd += " | {outputf}".format(outputf=outputf)
                         if obfuscate:
                             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd,
                                                           obfuscationCommand=obfuscationCommand)
@@ -167,7 +180,11 @@ class Module(object):
                         return script
 
         # if we get to this point, no switched were specified
-        scriptEnd += "Get-ComputerDetails -Limit " + str(self.options['Limit']['Value']) + " -ToString"
+        scriptEnd += "Get-ComputerDetails -Limit " + str(self.options['Limit']['Value'])
+        if (outputf == "Out-String"):
+            scriptEnd += " -ToString | " + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        else:
+            scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
