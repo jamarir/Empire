@@ -32,6 +32,11 @@ class Module:
                 'Description': 'Agent to run module on.',
                 'Required': True,
                 'Value': ''
+            },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
             }
         }
         # save off a copy of the mainMenu object to access external functionality
@@ -61,7 +66,9 @@ class Module:
         # # get just the code needed for the specified function
         # script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
         script = moduleCode
-        scriptEnd = "Find-AllVulns | Out-String"
+        scriptEnd = "Find-AllVulns"
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd,
