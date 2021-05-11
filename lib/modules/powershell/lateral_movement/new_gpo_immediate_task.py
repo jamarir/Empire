@@ -47,6 +47,11 @@ class Module(object):
                 'Required': True,
                 'Value': ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'TaskName': {
                 'Description': 'Name for the schtask to create.',
                 'Required': True,
@@ -140,6 +145,7 @@ class Module(object):
                 self.options[option]['Value'] = value
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
+        moduleName = self.info["Name"]
         # Set booleans to false by default
         Obfuscate = False
         AMSIBypass = False
@@ -204,7 +210,8 @@ class Module(object):
                             else:
                                 script += " -" + str(option) + " '" + str(values['Value']) + "'"
 
-                script += ' | Out-String | %{$_ + \"`n\"};"`n' + str(module_name) + ' completed!"'
+                outputf = self.options["OutputFunction"]["Value"]
+                script += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             script = helpers.obfuscate(self.mainMenu.installPath, psScript=script,
