@@ -33,6 +33,11 @@ class Module:
                 'Required': True,
                 'Value': ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Extended': {
                 'Description': 'Set this flag to enable extended checks.',
                 'Required': True,
@@ -72,6 +77,9 @@ class Module:
         # script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
         script = moduleCode
         scriptEnd = "Invoke-PrivescCheck"
+
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd,
