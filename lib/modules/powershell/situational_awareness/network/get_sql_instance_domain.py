@@ -42,6 +42,11 @@ class Module(object):
                 'Required': True,
                 'Value': ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'DomainController': {
                 'Description': "Domain controller for Domain and Site that you want to query against.",
                 'Required': False,
@@ -88,6 +93,8 @@ class Module(object):
     
     def generate(self, obfuscate=False, obfuscationCommand=""):
         
+        moduleName = self.info["Name"]
+
         domainController = self.options['DomainController']['Value']
         computerName = self.options['ComputerName']['Value']
         domainAccount = self.options['DomainServiceAccount']['Value']
@@ -124,6 +131,9 @@ class Module(object):
             scriptEnd += " -CheckMgmt"
             if udpTimeOut != "":
                 scriptEnd += " -UDPTimeOut " + udpTimeOut
+
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd,
