@@ -47,6 +47,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Rhosts' : {
                 'Description'   :   'Specify the CIDR range or host to scan.',
                 'Required'      :   True,
@@ -107,6 +112,7 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
         
+        moduleName = self.info["Name"]
         # read in the common module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/recon/HTTP-Login.ps1"
         if obfuscate:
@@ -126,7 +132,7 @@ class Module(object):
         scriptEnd = "\nTest-Login"
 
         for option,values in self.options.items():
-            if option.lower() != "agent" and option.lower() != "showall":
+            if option.lower() != "agent" and option.lower() != "showall" and option.lower() != "outputfunction":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
@@ -134,7 +140,8 @@ class Module(object):
                     else:
                         scriptEnd += " -" + str(option) + " " + str(values['Value']) 
 
-        scriptEnd += " | Out-String"
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
