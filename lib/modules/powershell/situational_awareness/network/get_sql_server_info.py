@@ -37,6 +37,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Username' : {
                 'Description'   :   'SQL Server or domain account to authenticate with.',
                 'Required'      :   False,
@@ -67,6 +72,8 @@ class Module(object):
                 self.options[option]['Value'] = value
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
+        moduleName = self.info["Name"]
+
         username = self.options['Username']['Value']
         password = self.options['Password']['Value']
         instance = self.options['Instance']['Value']
@@ -111,6 +118,10 @@ class Module(object):
             scriptEnd += " -Password "+password
         if instance != "" and not check_all:
             scriptEnd += " -Instance "+instance
+
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+
         scriptEnd = helpers.keyword_obfuscation(scriptEnd)
         scriptEnd = helpers.keyword_obfuscation(scriptEnd)
 
