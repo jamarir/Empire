@@ -41,6 +41,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Username' : {
                 'Description'   :   'SQL Server or domain account to authenticate with.',
                 'Required'      :   False,
@@ -78,6 +83,7 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
+        moduleName = self.info["Name"]
         username = self.options['Username']['Value']
         password = self.options['Password']['Value']
         instance = self.options['Instance']['Value']
@@ -86,7 +92,7 @@ class Module(object):
         scriptEnd = ""
         
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "data/module_source/collection/Get-SQLColumnSampleData.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/Get-SQLColumnSampleData.ps1"
         script = ""
         if obfuscate:
             helpers.obfuscate_module(moduleSource=moduleSource, obfuscationCommand=obfuscationCommand)
@@ -98,7 +104,7 @@ class Module(object):
             return ""
 
         if check_all:
-            auxModuleSource = self.mainMenu.installPath + "data/module_source/situational_awareness/network/Get-SQLInstanceDomain.ps1"
+            auxModuleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Get-SQLInstanceDomain.ps1"
             if obfuscate:
                 helpers.obfuscate_module(moduleSource=auxModuleSource, obfuscationCommand=obfuscationCommand)
                 auxModuleSource = moduleSource.replace("module_source", "obfuscated_module_source")
@@ -123,6 +129,9 @@ class Module(object):
             scriptEnd += " -Instance "+instance
         if no_defaults:
             scriptEnd += " -NoDefaults "
+
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
