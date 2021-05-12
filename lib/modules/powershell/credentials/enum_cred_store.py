@@ -31,11 +31,6 @@ class Module(object):
                 'Description'   :   'Agent to run module on.',
                 'Required'      :   True,
                 'Value'         :   ''
-            },
-            'OutputFunction' : {
-                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
-                'Required'      :   False,
-                'Value'         :   'Out-String'
             }
         }
 
@@ -65,8 +60,7 @@ class Module(object):
             return ""
 
         script = f.read()
-        outputf = self.options["OutputFunction"]["Value"]
-        script += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        script += " | " + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         f.close()
 
         scriptEnd = "\n%s" %(scriptCmd)
