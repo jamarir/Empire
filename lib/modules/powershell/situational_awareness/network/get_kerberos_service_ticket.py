@@ -127,7 +127,7 @@ class Module(object):
         if excludecomputers == 'False':
             scriptEnd += " -ExcludeComputers $false"
 
-        scriptEnd += " | Format-Table -AutoSize | Out-String"
+        scriptEnd += " | Format-Table -AutoSize"
         outputf = self.options["OutputFunction"]["Value"]
         scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
