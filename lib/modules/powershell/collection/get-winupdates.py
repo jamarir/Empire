@@ -59,6 +59,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'ComputerName' : {
                 # The 'ComputerName' option defaults to localhost but is adjustable
                 'Description'   :   'The ComputerName this agents user has admin access to that must be queried for updates',
@@ -87,6 +92,7 @@ class Module(object):
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
 
+        moduleName = self.info["Name"]
         computername = self.options['ComputerName']['Value']
         print(helpers.color("[+] Querying: " + str(computername)))
 
@@ -111,6 +117,10 @@ class Module(object):
 
         scriptEnd = " Get-WinUpdates"
         scriptEnd += " -ComputerName "+computername
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+
+
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
