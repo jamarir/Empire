@@ -127,9 +127,9 @@ class Module(object):
                         else:
                             scriptEnd += " -" + str(option) + " " + str(values['Value']) 
 
-            outputf = self.options["OutputFunction"]["Value"]
-            scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};'
-            scriptEnd += "'Get-System completed'"
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};'
+        scriptEnd += "'Get-System completed'"
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
