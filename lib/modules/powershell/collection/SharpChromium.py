@@ -59,6 +59,11 @@ class Module(object):
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'OutputFunction' : {
+                'Description'   :   'PowerShell\'s output function to use ("Out-String", "ConvertTo-Json", "ConvertTo-Csv", "ConvertTo-Html", "ConvertTo-Xml").',
+                'Required'      :   False,
+                'Value'         :   'Out-String'
+            },
             'Type' : {
                 'Description'   :   'Kind of data to be retrieved, should be "all", "logins", "history" or "cookies".',
                 'Required'      :   True,
@@ -85,7 +90,7 @@ class Module(object):
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
-
+        moduleName = self.info["Name"]
         # if you're reading in a large, external script that might be updates,
         #   use the pattern below
         # read in the common module source code
@@ -121,6 +126,9 @@ class Module(object):
                     scriptEnd += "'" + domain + "',"
                 scriptEnd = scriptEnd[:-1]
                 scriptEnd += ")"
+
+        outputf = self.options["OutputFunction"]["Value"]
+        scriptEnd += " | {outputf} | ".format(outputf=outputf) + '%{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         if obfuscate:
             scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
